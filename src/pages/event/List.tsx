@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
+import { LoadingSpiner } from "@/components/common/LoadingSpiner";
 import { Input } from "@/components/common/form-controls";
 import DateRangePickerControl from "@/components/common/form-controls/DateRangePicker";
 import { EventCard } from "@/components/event";
@@ -21,6 +22,8 @@ interface iProps {
 const List = () => {
   const navigate = useNavigate();
   const [eventList, setEvenList] = useState<iProps[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const { control, watch, reset } = useForm();
   const [xTotal, setXTotal] = useState(0);
@@ -33,6 +36,7 @@ const List = () => {
     searchParams.get("end_time"),
   ]);
   const getEventList = async () => {
+    setLoading(true);
     const params: any = {
       page: searchParams.get("page") || 1,
       limit: searchParams.get("limit") || 8,
@@ -50,8 +54,10 @@ const List = () => {
     if (response?.statusCode == "200") {
       setEvenList(response?.data?.event);
       setXTotal(response?.data?.meta?.total);
+      setLoading(false);
     } else {
       toast.error(response?.message);
+      setLoading(false);
     }
   };
   const handlePageChange = (page: number) => {
@@ -87,6 +93,7 @@ const List = () => {
   };
 
   const handleRSVP = async (event: any, eventID: string) => {
+    setLoading(true);
     event.stopPropagation();
     const { authToken } = getAllCookies();
     if (!authToken) {
@@ -95,8 +102,10 @@ const List = () => {
     }
     const response = await updateData(`event/event-attendece/${eventID}`);
     if (response?.statusCode == "200") {
+      setLoading(false);
       toast.success(response?.message);
     } else {
+      setLoading(false);
       toast.error(response?.message);
     }
   };
@@ -145,25 +154,31 @@ const List = () => {
         </Col>
       </Row>
       <br />
-      <Row gutter={[8, 8]}>
-        {eventList?.map((item: iProps) => (
-          <Col sm={12} xs={12} md={6}>
-            <div
-              key={item?._id}
-              onClick={() => navigate(`/event/${item?._id}`)}
-            >
-              <EventCard handleRSVP={handleRSVP} data={item} />
-            </div>
-          </Col>
-        ))}
-      </Row>
-      <br />
-      <Pagination
-        pageSize={Number(searchParams.get("limit") || 8)}
-        current={Number(searchParams.get("page") || 1)}
-        total={xTotal}
-        onChange={handlePageChange}
-      />
+      {loading ? (
+        <LoadingSpiner />
+      ) : (
+        <>
+          <Row gutter={[8, 8]}>
+            {eventList?.map((item: iProps) => (
+              <Col sm={12} xs={12} md={6}>
+                <div
+                  key={item?._id}
+                  onClick={() => navigate(`/event/${item?._id}`)}
+                >
+                  <EventCard handleRSVP={handleRSVP} data={item} />
+                </div>
+              </Col>
+            ))}
+          </Row>
+          <br />
+          <Pagination
+            pageSize={Number(searchParams.get("limit") || 8)}
+            current={Number(searchParams.get("page") || 1)}
+            total={xTotal}
+            onChange={handlePageChange}
+          />
+        </>
+      )}
     </div>
   );
 };

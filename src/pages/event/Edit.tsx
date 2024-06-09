@@ -9,7 +9,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { LoadingSpiner } from "@/components/common/LoadingSpiner";
 
 const schema = yup.object({
   title: yup.string().trim().required("Title is required"),
@@ -25,6 +26,7 @@ const Edit = () => {
     resolver: yupResolver(schema),
   });
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const {
     handleSubmit,
     setValue,
@@ -35,6 +37,7 @@ const Edit = () => {
     getEvenDetails();
   }, [id]);
   const getEvenDetails = async () => {
+    setLoading(true);
     const response = await getDetails(`event/event/${id}`);
     if (response?.statusCode == "200") {
       setValue("description", response?.data?.description);
@@ -42,8 +45,10 @@ const Edit = () => {
       setValue("location", response?.data?.location);
       setValue("start_time", dayjs(response?.data?.start_time));
       setValue("end_time", dayjs(response?.data?.end_time));
+      setLoading(false);
     } else {
       toast.error(response?.message);
+      setLoading(false);
     }
   };
   const onSubmit = async (data: any) => {
@@ -65,37 +70,41 @@ const Edit = () => {
     <div className="md:py-4 md:px-16 p-4">
       <h2 className="font-semibold text-base underline  ">Edit Event</h2>
       <br />
-      <FormProvider {...method}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <EventForm />
-          <div className="flex gap-1 justify-end mt-6 ">
-            <div className="w-44">
-              <Button
-                type="primary"
-                block
-                ghost
-                size="large"
-                className="!text-xs !rounded shadow-none"
-                onClick={() => navigate("/")}
-              >
-                Cancel
-              </Button>
+      {loading ? (
+        <LoadingSpiner />
+      ) : (
+        <FormProvider {...method}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <EventForm />
+            <div className="flex gap-1 justify-end mt-6 ">
+              <div className="w-44">
+                <Button
+                  type="primary"
+                  block
+                  ghost
+                  size="large"
+                  className="!text-xs !rounded shadow-none"
+                  onClick={() => navigate("/")}
+                >
+                  Cancel
+                </Button>
+              </div>
+              <div className="w-44">
+                <Button
+                  type="primary"
+                  block
+                  htmlType="submit"
+                  className="!text-xs !rounded shadow-none"
+                  size="large"
+                  loading={isSubmitting}
+                >
+                  Update
+                </Button>
+              </div>
             </div>
-            <div className="w-44">
-              <Button
-                type="primary"
-                block
-                htmlType="submit"
-                className="!text-xs !rounded shadow-none"
-                size="large"
-                loading={isSubmitting}
-              >
-                Update
-              </Button>
-            </div>
-          </div>
-        </form>
-      </FormProvider>
+          </form>
+        </FormProvider>
+      )}
     </div>
   );
 };
